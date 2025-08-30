@@ -23,7 +23,19 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       setError(null);
       
       try {
-        const { data, error: dbError } = await supabase.from('projects').select('*');
+        console.log('useProjects: Starting to fetch projects...');
+        
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Projects fetch timeout')), 8000)
+        );
+        
+        const projectsResult = await Promise.race([
+          supabase.from('projects').select('*'),
+          timeoutPromise
+        ]) as any;
+        
+        const { data, error: dbError } = projectsResult;
         
         if (dbError) {
           console.error('Error fetching projects:', dbError);
@@ -37,6 +49,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           }
           return;
         }
+        
+        console.log('useProjects: Projects fetched successfully, count:', data?.length || 0);
         
         // Map all projects from snake_case to camelCase
         const mappedProjects: Project[] = (data || []).map(project => ({
@@ -58,7 +72,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         setProjects(mappedProjects);
       } catch (error) {
         console.error('Unexpected error fetching projects:', error);
-        setError('An unexpected error occurred while loading projects. Please try refreshing the page.');
+        
+        if (error instanceof Error && error.message.includes('timeout')) {
+          setError('Connection timeout while loading projects. Please check your internet connection.');
+        } else {
+          setError('An unexpected error occurred while loading projects. Please try refreshing the page.');
+        }
       }
     };
     

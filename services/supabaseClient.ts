@@ -14,11 +14,20 @@ export const testDatabaseConnection = async (): Promise<{ success: boolean; erro
     try {
         console.log('Testing Supabase connection...');
         
-        // Test 1: Basic connection
-        const { data: healthCheck, error: healthError } = await supabase
+        // Test 1: Basic connection with timeout
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        );
+        
+        const connectionPromise = supabase
             .from('profiles')
             .select('count')
             .limit(1);
+            
+        const { data: healthCheck, error: healthError } = await Promise.race([
+            connectionPromise,
+            timeoutPromise
+        ]) as any;
             
         if (healthError) {
             if (healthError.message.includes('relation "profiles" does not exist')) {
@@ -59,11 +68,22 @@ export const getFullUserProfile = async (authUser: AuthUser | null): Promise<Use
     console.log('getFullUserProfile: Fetching profile for user ID:', authUser.id);
     
     try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
-            .single();
+        // Create timeout promise
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+        );
+        
+        // Race the database query against timeout
+        const profileResult = await Promise.race([
+            supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authUser.id)
+                .single(),
+            timeoutPromise
+        ]) as any;
+        
+        const { data, error } = profileResult;
 
         if (error) {
             console.log('getFullUserProfile: Database error:', error);
@@ -124,6 +144,17 @@ export const getFullUserProfile = async (authUser: AuthUser | null): Promise<Use
     } catch (e) {
         console.error('getFullUserProfile: Unexpected error:', e);
         if (e instanceof Error) {
+            // If it's a timeout or network error, return a basic profile to allow app to continue
+            if (e.message.includes('timeout') || e.message.includes('network')) {
+                console.log('getFullUserProfile: Timeout/network error, returning basic profile');
+                return {
+                    id: authUser.id,
+                    email: authUser.email || '',
+                    name: authUser.user_metadata?.name || 'User',
+                    role: authUser.user_metadata?.role || UserRole.PATRON,
+                    status: 'Active',
+                } as User;
+            }
             throw e; // Re-throw known errors
         }
         throw new Error('An unexpected error occurred while fetching the user profile.');

@@ -31,6 +31,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [forceShowApp, setForceShowApp] = useState(false);
+
+  // Fallback timer to prevent infinite loading
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      console.warn('useAuth: Loading took too long, forcing app to show');
+      setForceShowApp(true);
+      setLoading(false);
+    }, 15000); // 15 seconds max loading time
+
+    return () => clearTimeout(fallbackTimer);
+  }, []);
 
   const fetchAllUsers = useCallback(async () => {
     // Only fetch users if an admin is logged in.
@@ -72,16 +84,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     setLoading(true);
     
-    // Check for active session on initial load
+    // Check for active session on initial load with timeout
     const checkSession = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = await getFullUserProfile(session?.user ?? null);
+            console.log('useAuth: Starting session check...');
+            
+            // Create a timeout promise
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Session check timeout')), 10000)
+            );
+            
+            // Race the session check against the timeout
+            const sessionResult = await Promise.race([
+                supabase.auth.getSession(),
+                timeoutPromise
+            ]) as any;
+            
+            console.log('useAuth: Session check completed:', sessionResult?.data?.session ? 'Session found' : 'No session');
+            
+            const user = await getFullUserProfile(sessionResult?.data?.session?.user ?? null);
+            console.log('useAuth: Profile retrieved:', user ? 'Success' : 'No profile');
+            
             setCurrentUser(user);
         } catch (error) {
-            console.error('Error checking session:', error);
+            console.error('useAuth: Error checking session:', error);
+            // On any error, just set no user and continue
             setCurrentUser(null);
         } finally {
+            console.log('useAuth: Session check complete, setting loading to false');
             setLoading(false);
         }
     };
@@ -91,10 +121,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Listen for auth state changes (login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
+        console.log('useAuth: Auth state changed:', _event);
         const user = await getFullUserProfile(session?.user ?? null);
         setCurrentUser(user);
       } catch (error) {
-        console.error('Error in auth state change:', error);
+        console.error('useAuth: Error in auth state change:', error);
         setCurrentUser(null);
       }
     });
@@ -478,11 +509,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={{ currentUser, users, login, logout, signup, updateUser, addUser, removeUser, addBulkUsers, changePassword, fetchAllUsers }}>
-      {loading ? (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      {loading && !forceShowApp ? (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600 dark:text-gray-300">Loading KSEF Platform...</p>
+            <p className="mt-2 text-sm text-gray-400">Checking authentication status...</p>
+            
+            <div className="mt-8">
+              <button
+                onClick={() => {
+                  console.log('User manually bypassed loading');
+                  setLoading(false);
+                  setForceShowApp(true);
+                }}
+                className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Continue Without Login
+              </button>
+            </div>
+            
+            <div className="mt-4 text-xs text-gray-400">
+              Taking too long? Check your internet connection.
+            </div>
           </div>
         </div>
       ) : (
