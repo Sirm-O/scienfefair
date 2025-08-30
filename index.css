@@ -3,9 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles for KSEF Judging Platform */
+/* Font imports must come after Tailwind */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* Base styles for KSEF Judging Platform */
 /* Reset and base styles */
 * {
   box-sizing: border-box;

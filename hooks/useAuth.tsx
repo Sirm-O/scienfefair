@@ -74,18 +74,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Check for active session on initial load
     const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = await getFullUserProfile(session?.user ?? null);
-        setCurrentUser(user);
-        setLoading(false);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = await getFullUserProfile(session?.user ?? null);
+            setCurrentUser(user);
+        } catch (error) {
+            console.error('Error checking session:', error);
+            setCurrentUser(null);
+        } finally {
+            setLoading(false);
+        }
     };
     
     checkSession();
 
     // Listen for auth state changes (login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const user = await getFullUserProfile(session?.user ?? null);
-      setCurrentUser(user);
+      try {
+        const user = await getFullUserProfile(session?.user ?? null);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+        setCurrentUser(null);
+      }
     });
 
     return () => {
@@ -442,7 +453,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={{ currentUser, users, login, logout, signup, updateUser, addUser, removeUser, addBulkUsers, changePassword, fetchAllUsers }}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading KSEF Platform...</p>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

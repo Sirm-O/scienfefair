@@ -5,10 +5,33 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import AuthPage from './components/auth/AuthPage';
 import { ThemeProvider } from './hooks/useTheme';
 import { ProjectProvider, useProjects } from './hooks/useProjects';
+import ForcePasswordChangeModal from './components/shared/ForcePasswordChangeModal';
 
 const AppContent: React.FC = () => {
   const { currentUser } = useAuth();
   const { error: projectError } = useProjects();
+
+  console.log('AppContent render - currentUser:', currentUser, 'projectError:', projectError);
+
+  // If there's a force password change requirement, show the modal
+  if (currentUser?.forcePasswordChange) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+        <div className="w-full max-w-lg text-center bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200">Password Change Required</h2>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">
+            You must change your password before continuing.
+          </p>
+          <div className="mt-6">
+            <ForcePasswordChangeModal 
+              user={currentUser}
+              onSuccess={() => window.location.reload()}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If a project-related database error occurs after login, show a dedicated error screen.
   if (projectError && currentUser) {
@@ -37,6 +60,8 @@ const AppContent: React.FC = () => {
 
 
 const App: React.FC = () => {
+  console.log('App.tsx: App component rendering');
+  
   return (
     <ThemeProvider>
       <AuthProvider>
