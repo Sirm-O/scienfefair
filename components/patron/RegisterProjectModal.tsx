@@ -104,14 +104,26 @@ const RegisterProjectModal: React.FC<RegisterProjectModalProps> = ({
     };
 
     try {
+        let result;
         if (projectToEdit) {
             await updateProject(projectToEdit.id, projectData);
+            console.log('Project updated successfully');
         } else {
-            await addProject(projectData);
+            result = await addProject(projectData);
+            console.log('Project added successfully:', result);
         }
+        
+        // Close modal on success
         onClose();
+        
+        // Optional: Show success message
+        setTimeout(() => {
+            alert(projectToEdit ? 'Project updated successfully!' : 'Project registered successfully!');
+        }, 100);
+        
     } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred.");
+        console.error('Error saving project:', err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred while saving the project.");
     } finally {
         setIsSaving(false);
     }

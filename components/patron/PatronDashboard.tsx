@@ -4,6 +4,7 @@ import { User } from '../../types';
 import Sidebar from './Sidebar';
 import DashboardOverview from './DashboardOverview';
 import MyProjects from './MyProjects';
+import ProjectDebugInfo from '../shared/ProjectDebugInfo';
 
 export type PatronView = 'dashboard' | 'projects';
 
@@ -31,6 +32,7 @@ const PatronDashboard: React.FC<PatronDashboardProps> = ({ user }) => {
             <main className="flex-1 p-6 sm:p-8 lg:p-10 bg-gray-100 dark:bg-gray-900">
                 {renderContent()}
             </main>
+            <ProjectDebugInfo />
         </div>
     );
 };

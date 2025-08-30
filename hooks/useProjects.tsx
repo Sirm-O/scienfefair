@@ -21,18 +21,47 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     const fetchProjects = async () => {
       setError(null);
-      const { data, error: dbError } = await supabase.from('projects').select('*');
-      if (dbError) {
-        console.error('Error fetching projects:', dbError.message);
-        if (dbError.message.includes("schema cache") || dbError.message.includes("does not exist")) {
-             setError("Database connection error: The 'projects' table was not found. Please ensure the database has been set up correctly by running the provided SQL script in your Supabase project.");
-        } else {
+      
+      try {
+        const { data, error: dbError } = await supabase.from('projects').select('*');
+        
+        if (dbError) {
+          console.error('Error fetching projects:', dbError);
+          
+          if (dbError.message.includes("relation \"projects\" does not exist")) {
+            setError("Database setup incomplete: The 'projects' table doesn't exist. Please contact the administrator to set up the database tables.");
+          } else if (dbError.message.includes("schema cache")) {
+            setError("Database connection error: Schema cache issue. Please refresh the page or contact support.");
+          } else {
             setError(`Failed to fetch projects: ${dbError.message}`);
+          }
+          return;
         }
-      } else {
-        setProjects(data as Project[]);
+        
+        // Map all projects from snake_case to camelCase
+        const mappedProjects: Project[] = (data || []).map(project => ({
+          id: project.id,
+          patronId: project.patron_id,
+          title: project.title,
+          category: project.category,
+          regNo: project.reg_no,
+          presenters: project.presenters || [],
+          school: project.school,
+          region: project.region,
+          county: project.county,
+          subCounty: project.sub_county,
+          status: project.status,
+          level: project.level,
+          zone: project.zone,
+        }));
+        
+        setProjects(mappedProjects);
+      } catch (error) {
+        console.error('Unexpected error fetching projects:', error);
+        setError('An unexpected error occurred while loading projects. Please try refreshing the page.');
       }
     };
+    
     fetchProjects();
 
     // Subscribe to real-time changes
@@ -54,6 +83,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   const addProject = useCallback(async (projectData: NewProject): Promise<Project> => {
+    setError(null);
+    
     // Generate Reg No client-side for immediate feedback, DB will enforce uniqueness
     const projectCount = projects.length + 1; // Simple increment
     const countyCode = projectData.county.replace(/\s/g, '').slice(0, 3).toUpperCase();
@@ -73,21 +104,51 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       level: 'Sub-County',
     };
 
-    const { data, error } = await supabase
-      .from('projects')
-      .insert(newProjectData)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(newProjectData)
+        .select()
+        .single();
 
-    if (error) {
-      if (error.code === '23505') { // Unique constraint violation
-        throw new Error("A project with a similar registration number already exists. Please try again.");
+      if (error) {
+        console.error('Supabase insert error:', error);
+        
+        if (error.code === '23505') { // Unique constraint violation
+          throw new Error("A project with a similar registration number already exists. Please try again.");
+        }
+        
+        if (error.message.includes("relation \"projects\" does not exist")) {
+          throw new Error("Database setup incomplete: The 'projects' table doesn't exist. Please contact the administrator to set up the database.");
+        }
+        
+        throw new Error(`Failed to register project: ${error.message}`);
       }
+      
+      // Map snake_case response to camelCase for our app
+      const newProject: Project = {
+        id: data.id,
+        patronId: data.patron_id,
+        title: data.title,
+        category: data.category,
+        regNo: data.reg_no,
+        presenters: data.presenters,
+        school: data.school,
+        region: data.region,
+        county: data.county,
+        subCounty: data.sub_county,
+        status: data.status,
+        level: data.level,
+      };
+      
+      // Update local state immediately to show the new project
+      setProjects(prevProjects => [...prevProjects, newProject]);
+      
+      return newProject;
+    } catch (error) {
+      console.error('Project registration error:', error);
       throw error;
     }
-    
-    // Supabase returns snake_case, we need to map to camelCase for our app type
-    return { ...data, subCounty: data.sub_county, regNo: data.reg_no, patronId: data.patron_id } as Project;
   }, [projects]);
 
   const updateProject = useCallback(async (projectId: string, updates: Partial<Project>): Promise<void> => {

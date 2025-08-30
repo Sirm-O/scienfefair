@@ -4,7 +4,20 @@
 
 1. A GitHub repository with this code
 2. A Netlify account
-3. Environment variables configured in Netlify
+3. A Supabase project
+4. Environment variables configured in Netlify
+
+## Database Setup (REQUIRED)
+
+**Before deploying, you MUST set up the Supabase database:**
+
+1. Go to your Supabase project dashboard
+2. Navigate to the SQL Editor
+3. Run the `supabase-schema.sql` file found in the project root
+4. This will create all necessary tables: `profiles`, `projects`, and `scores`
+5. Verify tables are created in the Table Editor
+
+**Without this step, project registration will fail!**
 
 ## Deployment Steps
 
