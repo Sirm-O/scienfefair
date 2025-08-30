@@ -6,7 +6,7 @@ import { getMockScoresForProject, IndividualJudgeScore } from '../../utils/mockS
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { PART_A_CRITERIA, PART_B_CRITERIA, PART_C_CRITERIA } from '../../constants';
 import PrintIcon from '../icons/PrintIcon';
-import { KSEF_LOGO_BASE64 } from '../../assets/ksef-logo';
+import { KSEF_LOGO_BASE64 } from '@/assets/ksef-logo';
 
 const JudgeFeedbackSection: React.FC<{ judgeScore: IndividualJudgeScore }> = ({ judgeScore }) => {
     const [isOpen, setIsOpen] = useState(true);

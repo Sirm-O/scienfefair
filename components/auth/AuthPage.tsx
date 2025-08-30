@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import LoginPage from './LoginPage';
 import SignupPage from './SignupPage';
-import { KSEF_LOGO_BASE64 } from '../../assets/ksef-logo';
+import { KSEF_LOGO_BASE64 } from '@/assets/ksef-logo';
 
 const AuthPage: React.FC = () => {
     const [isLoginView, setIsLoginView] = useState(true);

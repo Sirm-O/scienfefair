@@ -12,7 +12,8 @@ export default defineConfig(({ mode }: { mode: string }) => {
       resolve: {
         alias: {
           '@': resolve(process.cwd(), '.'),
-        }
+        },
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
       },
       build: {
         outDir: 'dist',

@@ -6,7 +6,7 @@ import DownloadIcon from '../icons/DownloadIcon';
 import { getMockScoresForProject, DetailedProjectScores } from '../../utils/mockScores';
 import { PROJECT_CATEGORIES } from '../../constants';
 import { useAuth } from '../../hooks/useAuth';
-import { KSEF_LOGO_BASE64 } from '../../assets/ksef-logo';
+import { KSEF_LOGO_BASE64 } from '@/assets/ksef-logo';
 
 interface ReportGeneratorProps {
     title: string;

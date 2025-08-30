@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import UserIcon from './icons/UserIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
 import InfoIcon from './icons/InfoIcon';
-import { KSEF_LOGO_BASE64 } from '../../assets/ksef-logo';
+import { KSEF_LOGO_BASE64 } from '@/assets/ksef-logo';
 
 interface HeaderProps {
     user: User;
