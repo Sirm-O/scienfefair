@@ -1,0 +1,5 @@
+{
+  "name": "Copy of KSEF Judging Platform",
+  "description": "A modern, responsive web app for the Kenya Science and Engineering Fair (KSEF) online judging process. It provides digital scorecards, project management, and automated scoring based on the official KSEF marking scheme.",
+  "requestFramePermissions": []
+}
