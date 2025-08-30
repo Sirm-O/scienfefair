@@ -73,15 +73,19 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
     setError(null);
     setIsSaving(true);
     try {
+      console.log('AddUserModal: Saving user with data:', { name, email, role, assignedRegion, assignedCounty, assignedSubCounty });
       const userData: NewUser = { name, email, role };
       if (assignedRegion) userData.assignedRegion = assignedRegion;
       if (assignedCounty) userData.assignedCounty = assignedCounty;
       if (assignedSubCounty) userData.assignedSubCounty = assignedSubCounty;
 
       await onAddUser(userData);
+      console.log('AddUserModal: User created successfully');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      console.error('AddUserModal: Error saving user:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setError(`Error saving user: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }

@@ -24,6 +24,7 @@ const CountyAdminDashboard: React.FC<CountyAdminDashboardProps> = ({ user }) => 
 
     const countyData = useMemo(() => {
         if (!adminCounty) {
+            // If no county assignment, return empty data rather than crashing
             return { users: [], projects: [] };
         }
         const filteredUsers = users.filter(u => u.assignedCounty === adminCounty);
@@ -31,7 +32,10 @@ const CountyAdminDashboard: React.FC<CountyAdminDashboardProps> = ({ user }) => 
         return { users: filteredUsers, projects: filteredProjects };
     }, [users, allProjects, adminCounty]);
 
-    if (!adminCounty) {
+    // Only check for assignment if user role requires it
+    const requiresCountyAssignment = user.role === 'County Admin';
+    
+    if (requiresCountyAssignment && !adminCounty) {
         return (
             <main className="container mx-auto p-8">
                 <div className="text-center bg-red-100 dark:bg-red-900/50 p-6 rounded-lg">

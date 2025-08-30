@@ -212,6 +212,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
   
   const addUser = useCallback(async (userData: NewUser): Promise<User> => {
+     console.log('addUser: Starting user creation with data:', userData);
+     
      // 1. Save the current admin's session.
      const { data: { session: currentAdminSession } } = await supabase.auth.getSession();
      if (!currentAdminSession) {
@@ -220,85 +222,127 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
      const defaultPassword = 'ksef2026';
 
-     const { data: authData, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: defaultPassword,
-        options: {
-            // @ts-ignore
-            email_confirm: true,
-            data: { 
-                name: userData.name, 
-                role: userData.role,
-                assigned_region: userData.assignedRegion,
-                assigned_county: userData.assignedCounty,
-                assigned_sub_county: userData.assignedSubCounty,
-            },
-        }
-     });
-     if (error) throw error;
-     if (!authData.user) throw new Error("User creation failed in Supabase Auth.");
+     try {
+         const { data: authData, error } = await supabase.auth.signUp({
+            email: userData.email,
+            password: defaultPassword,
+            options: {
+                // @ts-ignore
+                email_confirm: true,
+                data: { 
+                    name: userData.name, 
+                    role: userData.role,
+                    assigned_region: userData.assignedRegion,
+                    assigned_county: userData.assignedCounty,
+                    assigned_sub_county: userData.assignedSubCounty,
+                },
+            }
+         });
+         
+         if (error) {
+             console.error('addUser: Auth signup error:', error);
+             throw new Error(`Failed to create user account: ${error.message}`);
+         }
+         if (!authData.user) throw new Error("User creation failed in Supabase Auth.");
 
-     let profileData: any | null = null;
-     for (let i = 0; i < 5; i++) {
-         await new Promise(res => setTimeout(res, 300 * i)); 
+         console.log('addUser: Auth user created, updating profile...', authData.user.id);
 
-         const { data, error: updateError } = await supabase
-             .from('profiles')
-             .update({ 
-                 role: userData.role,
-                 assigned_region: userData.assignedRegion,
-                 assigned_county: userData.assignedCounty,
-                 assigned_sub_county: userData.assignedSubCounty,
-                 force_password_change: false,
-             })
-             .eq('id', authData.user.id)
-             .select()
-             .single();
+         let profileData: any | null = null;
+         let lastError: any = null;
+         
+         for (let i = 0; i < 8; i++) {
+             await new Promise(res => setTimeout(res, 500 * (i + 1))); // Increased delay
 
-         if (data) {
-             profileData = data;
-             break; 
+             const { data, error: updateError } = await supabase
+                 .from('profiles')
+                 .update({ 
+                     role: userData.role,
+                     assigned_region: userData.assignedRegion || null,
+                     assigned_county: userData.assignedCounty || null,
+                     assigned_sub_county: userData.assignedSubCounty || null,
+                     force_password_change: false,
+                 })
+                 .eq('id', authData.user.id)
+                 .select()
+                 .single();
+
+             if (data) {
+                 profileData = data;
+                 console.log('addUser: Profile updated successfully:', data);
+                 break; 
+             }
+
+             lastError = updateError;
+             if (updateError && updateError.code !== 'PGRST116') {
+                 console.error('addUser: Critical update error:', updateError);
+                 throw new Error(`Failed to update user profile: ${updateError.message}`);
+             }
+             
+             console.log(`addUser: Retry ${i + 1}/8 - Profile not found yet, waiting...`);
+         }
+         
+         if (!profileData) {
+             console.error('addUser: Failed to update profile after 8 attempts. Last error:', lastError);
+             throw new Error("Failed to update user profile after creation. The profile may not have been created by the database trigger yet. Please try again in a moment.");
+         }
+         
+         // 2. Restore the original admin's session.
+         const { error: sessionError } = await supabase.auth.setSession({
+            access_token: currentAdminSession.access_token,
+            refresh_token: currentAdminSession.refresh_token,
+         });
+         
+         if (sessionError) {
+            console.error("Critical: Failed to restore admin session. Logging out.", sessionError.message);
+            await logout(); // Fail-safe logout
+            throw new Error("Could not restore your session after user creation. Please log in again.");
          }
 
-         if (updateError && updateError.code !== 'PGRST116') throw updateError;
+         console.log('addUser: User creation completed successfully');
+         
+         // 3. Return the newly created user profile data.
+         const newUser = {
+            id: profileData.id,
+            name: profileData.name,
+            email: profileData.email,
+            role: profileData.role,
+            status: profileData.status,
+            forcePasswordChange: profileData.force_password_change,
+            idNumber: profileData.id_number,
+            tscNumber: profileData.tsc_number,
+            school: profileData.school,
+            teachingSubjects: profileData.teaching_subjects,
+            phoneNumber: profileData.phone_number,
+            assignments: profileData.assignments,
+            coordinatorCategory: profileData.coordinator_category,
+            assignedRegion: profileData.assigned_region,
+            assignedCounty: profileData.assigned_county,
+            assignedSubCounty: profileData.assigned_sub_county,
+        };
+        
+        // Refresh the user list to include the new user
+        await fetchAllUsers();
+        
+        return newUser;
+     } catch (error) {
+         console.error('addUser: Error during user creation:', error);
+         
+         // Ensure we restore the admin session even if something failed
+         try {
+             await supabase.auth.setSession({
+                access_token: currentAdminSession.access_token,
+                refresh_token: currentAdminSession.refresh_token,
+             });
+         } catch (restoreError) {
+             console.error('addUser: Failed to restore session after error:', restoreError);
+             await logout();
+         }
+         
+         if (error instanceof Error) {
+             throw error;
+         }
+         throw new Error('An unexpected error occurred during user creation.');
      }
-     
-     if (!profileData) {
-         throw new Error("Failed to update user profile after creation. The profile was not found after several attempts.");
-     }
-     
-     // 2. Restore the original admin's session.
-     const { error: sessionError } = await supabase.auth.setSession({
-        access_token: currentAdminSession.access_token,
-        refresh_token: currentAdminSession.refresh_token,
-     });
-     
-     if (sessionError) {
-        console.error("Critical: Failed to restore admin session. Logging out.", sessionError.message);
-        await logout(); // Fail-safe logout
-        throw new Error("Could not restore your session after user creation. Please log in again.");
-     }
-
-     // 3. Return the newly created user profile data.
-     // The onAuthStateChange listener will handle updating the currentUser and user list.
-     return {
-        id: profileData.id,
-        name: profileData.name,
-        email: profileData.email,
-        role: profileData.role,
-        status: profileData.status,
-        forcePasswordChange: profileData.force_password_change,
-        idNumber: profileData.id_number,
-        tscNumber: profileData.tsc_number,
-        school: profileData.school,
-        teachingSubjects: profileData.teaching_subjects,
-        phoneNumber: profileData.phone_number,
-        assignments: profileData.assignments,
-        coordinatorCategory: profileData.coordinator_category,
-        assignedRegion: profileData.assigned_region,
-        assignedCounty: profileData.assigned_county,
-        assignedSubCounty: profileData.assigned_sub_county,
-    };
   }, [logout]);
   
   const addBulkUsers = useCallback(async (newUsers: NewUser[]): Promise<BulkAddResult> => {

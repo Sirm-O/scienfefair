@@ -41,13 +41,18 @@ const JudgesAndCoordinators: React.FC<JudgesAndCoordinatorsProps> = ({ users, on
 
     const handleAddUser = async (userData: NewUser) => {
         try {
+            console.log('JudgesAndCoordinators: Adding user with data:', userData);
             const newUser = await onAddUser(userData);
             if (newUser) {
-                showNotification(`User ${newUser.name} created. An invitation email has been sent. Once confirmed, they can log in with the default password: ksef2026`);
+                console.log('JudgesAndCoordinators: User created successfully:', newUser);
+                showNotification(`User ${newUser.name} created successfully. An invitation email has been sent. The default password is: ksef2026`);
             }
         } catch (error) {
-            console.error("Failed to add user:", error);
-            throw error;
+            console.error("JudgesAndCoordinators: Failed to add user:", error);
+            // Show a user-friendly error message
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while creating the user.';
+            showNotification(`Error: ${errorMessage}`);
+            throw error; // Re-throw to let AddUserModal handle it
         }
     };
     

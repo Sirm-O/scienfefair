@@ -24,6 +24,7 @@ const RegionalAdminDashboard: React.FC<RegionalAdminDashboardProps> = ({ user })
 
     const regionalData = useMemo(() => {
         if (!adminRegion) {
+            // If no region assignment, return empty data rather than crashing
             return { users: [], projects: [] };
         }
         const filteredUsers = users.filter(u => u.assignedRegion === adminRegion);
@@ -31,7 +32,10 @@ const RegionalAdminDashboard: React.FC<RegionalAdminDashboardProps> = ({ user })
         return { users: filteredUsers, projects: filteredProjects };
     }, [users, allProjects, adminRegion]);
 
-    if (!adminRegion) {
+    // Only check for assignment if user role requires it
+    const requiresRegionalAssignment = user.role === 'Regional Admin';
+    
+    if (requiresRegionalAssignment && !adminRegion) {
         return (
             <main className="container mx-auto p-8">
                 <div className="text-center bg-red-100 dark:bg-red-900/50 p-6 rounded-lg">
