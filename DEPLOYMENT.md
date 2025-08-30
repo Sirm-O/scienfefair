@@ -59,8 +59,8 @@ The following files have been optimized for production deployment:
 - Configured chunk splitting for better caching
 
 ### `index.html`
-- Removed problematic CDN imports
-- Kept essential external dependencies (Tailwind, jsPDF)
+- Removed Tailwind CSS CDN (production issue)
+- Kept essential external dependencies (jsPDF)
 - Optimized for production builds
 
 ### `public/_redirects`
@@ -92,6 +92,7 @@ The following files have been optimized for production deployment:
 
 ## Production Optimizations
 
+- **Tailwind CSS**: Properly installed as PostCSS plugin (no CDN dependency)
 - **Code Splitting**: Vendor, Supabase, and charts are split into separate chunks
 - **Tree Shaking**: Unused code is removed during build
 - **Asset Optimization**: Images and other assets are optimized
