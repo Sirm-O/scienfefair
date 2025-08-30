@@ -105,17 +105,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []); // <-- Empty dependency array ensures this effect runs only once.
 
   const login = useCallback(async (email: string, password?: string): Promise<User> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
-    if (error) throw error;
-    if (!data.user) throw new Error("Login failed, user not found.");
+    console.log('login: Attempting login for email:', email);
     
-    const profile = await getFullUserProfile(data.user);
-    if (!profile) throw new Error("Could not retrieve user profile.");
-    if (profile.status === 'Inactive') {
-        await supabase.auth.signOut(); // Log them out immediately
-        throw new Error("This account is inactive. Please contact an administrator.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
+    if (error) {
+        console.error('login: Authentication error:', error);
+        throw error;
     }
-    return profile;
+    if (!data.user) {
+        console.error('login: No user data returned from authentication');
+        throw new Error("Login failed, user not found.");
+    }
+    
+    console.log('login: Authentication successful, fetching profile...');
+    
+    try {
+        const profile = await getFullUserProfile(data.user);
+        if (!profile) {
+            console.error('login: Profile retrieval returned null');
+            throw new Error("Could not retrieve user profile. The user account may not be properly set up in the database.");
+        }
+        
+        console.log('login: Profile retrieved successfully:', profile);
+        
+        if (profile.status === 'Inactive') {
+            console.log('login: User account is inactive, logging out');
+            await supabase.auth.signOut(); // Log them out immediately
+            throw new Error("This account is inactive. Please contact an administrator.");
+        }
+        
+        return profile;
+    } catch (profileError) {
+        console.error('login: Error during profile retrieval:', profileError);
+        // Sign out the user since we can't get their profile
+        await supabase.auth.signOut();
+        throw profileError;
+    }
   }, []);
 
   const logout = useCallback(async () => {
