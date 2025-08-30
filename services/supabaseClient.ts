@@ -30,11 +30,29 @@ export const testDatabaseConnection = async (): Promise<{ success: boolean; erro
         ]) as any;
             
         if (healthError) {
+            console.error('Database connection error:', healthError);
+            
             if (healthError.message.includes('relation "profiles" does not exist')) {
                 return {
                     success: false,
                     error: 'Database tables not set up',
                     details: 'The profiles table does not exist. Please run the database schema setup script.'
+                };
+            }
+            
+            if (healthError.message.includes('infinite recursion detected in policy')) {
+                return {
+                    success: false,
+                    error: 'RLS Policy Error',
+                    details: 'Infinite recursion detected in Row Level Security policies. Please run the fix-rls-policies.sql script in your Supabase dashboard to resolve this issue.'
+                };
+            }
+            
+            if (healthError.message.includes('policy')) {
+                return {
+                    success: false,
+                    error: 'Database policy error',
+                    details: `RLS Policy issue: ${healthError.message}. Please check your Row Level Security policies.`
                 };
             }
             

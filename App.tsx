@@ -37,26 +37,52 @@ const AppContent: React.FC = () => {
 
   // Show database error if connection failed
   if (dbStatus && !dbStatus.success) {
+    const isRLSError = dbStatus.details && dbStatus.details.includes('infinite recursion');
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
         <div className="w-full max-w-lg text-center bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
-          <h2 className="text-2xl font-bold text-red-700 dark:text-red-200">Database Connection Error</h2>
+          <h2 className="text-2xl font-bold text-red-700 dark:text-red-200">
+            {isRLSError ? 'Database Policy Error' : 'Database Connection Error'}
+          </h2>
           <p className="mt-4 text-gray-600 dark:text-gray-300">
             {dbStatus.error}
           </p>
           <div className="mt-2 p-3 bg-red-50 dark:bg-gray-700 rounded-md text-sm text-red-800 dark:text-red-200 text-left font-mono">
             {dbStatus.details}
           </div>
+          
+          {isRLSError && (
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-left">
+              <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">🔧 How to Fix:</h3>
+              <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <li>1. Open your Supabase Dashboard</li>
+                <li>2. Navigate to SQL Editor</li>
+                <li>3. Run the <code className="bg-blue-200 dark:bg-blue-800 px-1 rounded">fix-rls-policies.sql</code> script</li>
+                <li>4. Refresh this page</li>
+              </ol>
+            </div>
+          )}
+          
           <p className="mt-4 text-sm text-gray-500">
-            Please ensure the database schema has been set up correctly. 
-            You may need to run the SQL script in your Supabase dashboard.
+            {isRLSError 
+              ? 'This error occurs when Row Level Security policies create circular dependencies.' 
+              : 'Please ensure the database schema has been set up correctly.'}
           </p>
-          <button 
-            onClick={() => setDbStatus(null)} 
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Continue Anyway
-          </button>
+          <div className="mt-6 space-x-2">
+            <button 
+              onClick={() => setDbStatus(null)} 
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Continue Anyway
+            </button>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );

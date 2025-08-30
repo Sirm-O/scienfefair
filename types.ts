@@ -70,6 +70,36 @@ export interface JudgeAssignment {
   section: 'A' | 'BC';
 }
 
+// Judge-Project Assignment Types
+export interface JudgeProjectAssignment {
+  id: string;
+  judgeId: string;
+  projectId: string;
+  section: 'A' | 'BC';
+  assignedBy: string;
+  status: 'Active' | 'Completed' | 'Reassigned';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Populated fields
+  judge?: User;
+  project?: Project;
+  assignedByUser?: User;
+}
+
+export interface CreateJudgeAssignmentData {
+  judgeId: string;
+  projectId: string;
+  section: 'A' | 'BC';
+  notes?: string;
+}
+
+export interface AssignmentResult {
+  success: boolean;
+  message: string;
+  assignmentId?: string;
+}
+
 export interface User {
   id: string;
   name: string;

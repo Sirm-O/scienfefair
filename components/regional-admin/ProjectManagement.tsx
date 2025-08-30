@@ -6,6 +6,7 @@ import ProjectDetailsModal from '../shared/ProjectDetailsModal';
 import { PROJECT_CATEGORIES } from '../../constants';
 import { processProjects, getJudgingProgressForAllProjects, getRankingForAllProjects, JudgingProgress, PromotionStatus } from '../../utils/mockScores';
 import DetailedProjectReportModal from '../shared/DetailedProjectReportModal';
+import ProjectAssignmentManagement from '../shared/ProjectAssignmentManagement';
 
 interface ProjectManagementProps {
     projects: Project[];
@@ -57,6 +58,7 @@ const JudgingStatusProgress: React.FC<{ progress?: JudgingProgress }> = ({ progr
 const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects }) => {
     const [viewingDetailsForProject, setViewingDetailsForProject] = useState<Project | null>(null);
     const [viewingReportForProject, setViewingReportForProject] = useState<Project | null>(null);
+    const [managingAssignmentsForProject, setManagingAssignmentsForProject] = useState<Project | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');

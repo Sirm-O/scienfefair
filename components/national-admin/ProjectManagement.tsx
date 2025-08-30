@@ -6,6 +6,7 @@ import ProjectDetailsModal from '../shared/ProjectDetailsModal';
 import { PROJECT_CATEGORIES } from '../../constants';
 import { getJudgingProgressForAllProjects, JudgingProgress, processProjects } from '../../utils/mockScores';
 import DetailedProjectReportModal from '../shared/DetailedProjectReportModal';
+import ProjectAssignmentManagement from '../shared/ProjectAssignmentManagement';
 
 
 interface ProjectManagementProps {
@@ -42,6 +43,7 @@ const JudgingStatusProgress: React.FC<{ progress?: JudgingProgress }> = ({ progr
 const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects }) => {
     const [viewingDetailsForProject, setViewingDetailsForProject] = useState<Project | null>(null);
     const [viewingReportForProject, setViewingReportForProject] = useState<Project | null>(null);
+    const [managingAssignmentsForProject, setManagingAssignmentsForProject] = useState<Project | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -154,12 +156,21 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects }) => {
                                     <JudgingStatusProgress progress={judgingProgress[project.id]} />
                                 </td>
                                 <td className="py-4 px-6 text-right">
-                                    <button 
-                                        onClick={() => handleViewClick(project)}
-                                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                                    >
-                                        View Details
-                                    </button>
+                                    <div className="flex justify-end space-x-2">
+                                        <button 
+                                            onClick={() => setManagingAssignmentsForProject(project)}
+                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                            title="Manage Judge Assignments"
+                                        >
+                                            Assign Judges
+                                        </button>
+                                        <button 
+                                            onClick={() => handleViewClick(project)}
+                                            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -177,6 +188,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects }) => {
                 <DetailedProjectReportModal
                     project={viewingReportForProject}
                     onClose={() => setViewingReportForProject(null)}
+                />
+            )}
+            {managingAssignmentsForProject && (
+                <ProjectAssignmentManagement
+                    project={managingAssignmentsForProject}
+                    onClose={() => setManagingAssignmentsForProject(null)}
                 />
             )}
         </div>

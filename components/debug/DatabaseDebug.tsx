@@ -14,7 +14,16 @@ const DatabaseDebug: React.FC = () => {
       const connectionTest = await testDatabaseConnection();
       setTestResults(prev => prev + `Connection Test: ${connectionTest.success ? 'PASSED' : 'FAILED'}\n`);
       if (!connectionTest.success) {
-        setTestResults(prev => prev + `Error: ${connectionTest.error}\nDetails: ${connectionTest.details}\n\n`);
+        setTestResults(prev => prev + `Error: ${connectionTest.error}\nDetails: ${connectionTest.details}\n`);
+        
+        // Provide specific guidance for RLS policy errors
+        if (connectionTest.details && connectionTest.details.includes('infinite recursion')) {
+          setTestResults(prev => prev + `\n🔧 FIX REQUIRED:\n`);
+          setTestResults(prev => prev + `1. Open your Supabase Dashboard\n`);
+          setTestResults(prev => prev + `2. Go to SQL Editor\n`);
+          setTestResults(prev => prev + `3. Run the fix-rls-policies.sql script\n`);
+          setTestResults(prev => prev + `4. Refresh this page\n\n`);
+        }
       }
 
       // Test 2: Check if profiles table exists

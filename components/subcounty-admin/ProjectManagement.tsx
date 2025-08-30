@@ -6,6 +6,7 @@ import ProjectDetailsModal from '../shared/ProjectDetailsModal';
 import { PROJECT_CATEGORIES } from '../../constants';
 import { processProjects, getJudgingProgressForAllProjects, getRankingForAllProjects, JudgingProgress, PromotionStatus } from '../../utils/mockScores';
 import DetailedProjectReportModal from '../shared/DetailedProjectReportModal';
+import ProjectAssignmentManagement from '../shared/ProjectAssignmentManagement';
 
 interface ProjectManagementProps {
     projects: Project[];
